@@ -24,7 +24,8 @@ def main():
         contiguity_errors = check_contiguity(sections)
         bad_start_errors = check_start_idx(sections)
         word_count_errors = check_word_counts(sections, transcript)
-        if contiguity_errors + bad_start_errors + word_count_errors == 0:
+        section_errors = check_segment_offsets(sections, transcript)
+        if contiguity_errors + bad_start_errors + word_count_errors + section_errors == 0:
             print("OK")
         else:
             print(f"{contiguity_errors} contiguity errors")
@@ -58,6 +59,27 @@ def check_word_counts(sections, transcript):
     if transcript_wc != sections_wc:
         print(f"Word count mismatch. Expected {transcript_wc}, got {sections_wc}.")
         errcount += 1
+    return errcount
+
+def check_segment_offsets(sections, transcript):
+    """
+    Compare each section with the corresponding lines from the transcript
+    using the start and end indices of the section.
+    If the text doesn't match or the indices are out of range, print an error.
+    Return the number of errors found.
+    """
+    utterances = transcript.split('\n')
+    errcount = 0
+    for section in sections:
+        chunk = "\n".join(utterances[section["start"] : section["end"] + 1])
+        try:
+            content =section.get("content", "")
+            if content != chunk:
+                print(f"Section content does not match corresponding utterances (start: {section["start"]}, end: {section["end"]}). Section: {section}")
+                errcount += 1
+        except IndexError:
+            errcount += 1
+            print(f"Section start/end out of range. start {section["start"]}; end {section["end"]}; max {len(utterances)}. Section {section}")
     return errcount
 
 if __name__ == "__main__":
